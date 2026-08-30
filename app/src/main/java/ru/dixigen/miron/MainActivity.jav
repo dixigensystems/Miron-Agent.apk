@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -16,6 +17,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        buildWebView();
+        web.loadUrl(START_URL);
+        setContentView(web);
+    }
+
+    private void buildWebView(){
         web = new WebView(this);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -24,7 +31,17 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
-        web.setWebViewClient(new WebViewClient());
+
+        web.setWebViewClient(new WebViewClient(){
+            @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail){
+                /* Рендерер WebView упал — НЕ даём приложению умереть.
+                   Пересоздаём окно целиком: пользователь видит перезагрузку агента. */
+                recreate();
+                return true;
+            }
+        });
+
         web.setWebChromeClient(new WebChromeClient(){
             @Override
             public void onPermissionRequest(final PermissionRequest request){
@@ -35,13 +52,11 @@ public class MainActivity extends Activity {
                 });
             }
         });
-        web.loadUrl(START_URL);
-        setContentView(web);
     }
 
     @Override
     public void onBackPressed(){
-        if (web.canGoBack()) web.goBack(); else super.onBackPressed();
+        if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed();
     }
 
     @Override
